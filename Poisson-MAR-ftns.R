@@ -23,39 +23,6 @@ randmvn <- function(n,mu.vec, cov.mat){
 	
 }
 
-# Returns the population abundance (NOT log)
-# for a 2 spp MAR model
-Twospp.mar <- function(A,B,Sigma,len,Xo,rnd.init=FALSE){
-	
-	# if rnd.int==FALSE, provide ann initial Xo value
-	Xmat <- matrix(0,ncol=len,nrow=2)
-	X.start <- Xo
-	if(rnd.init==TRUE){
-		Vec.V <- ginv(diag(4) - kronecker(B,B))%*%as.vector(Sigma) # Eq. 17th Ives et al 2003
-		V <- matrix(Vec.V, nrow=2,ncol=2,byrow=FALSE)
-		#if(V[2,2]<0){V[2,2] <-Sigma[2,2]/(1-B[2,2]^2)}
-		muvec <- ginv(diag(2)-B)%*%A
-		zero.mean.tst <- muvec<=log(.Machine$double.xmin)
-		if(sum(zero.mean.tst)>0){muvec[zero.mean.tst==1]<- log(.Machine$double.xmin)}
-		X.start <- randmvn(n=1,mu.vec= muvec , cov.mat=V)
-
-	}
-	Xmat[,1] <- X.start
-	
-	for( i in 2:len){
-		
-		im1 <- i-1;
-		Xim1  <- matrix(Xmat[,im1], nrow=2,ncol=1)
-		mui <- A + B%*%Xim1
-		rand.trans <- randmvn(n=1,mu.vec= mui, cov.mat=Sigma)
-		Xmat[,i] <- rand.trans
-	}
-	
-	return(t(exp(Xmat)))	
-}
-
-
-
 # 2. A 2 spp. simulation , compositional sim. ftn, Gompertz map & Cobweb, MAR(1) likelihood function  ---------#######
 Twospp.mar1 <- function(A,B,Sigma,len, plot.it=FALSE){
 	
@@ -365,18 +332,17 @@ Pois.mars.nreps <- function(ts.mat, K, my.thin, nchains, niter, nadapt, nreps,da
 
 
 
-# 5. Kalman estimation for the GSS model for a set of time series.
+# 5. Gompertz estimation for estimating the truth of a Time series.
 #	comm.mat is the community matrix with species as rows and time as columns
 #	K defines the numebr of times for cloning the data to improve the MLEs
 #	Full.results stores the full mcmcchain estimations
 #	ncahins number of chains to run
 #	nadapt number of itertions to sample from
 #	niter number of iterations tu run
-#	If plot.it=TRUE, then specify number of columns and number of rows in which you want to plot the graphs by
+#	If plot.it=TRUE, the specify number of columns and number of rows in which you want to plot the graphs by
 #	specifying cols = Number of Columns, rows = Number of Rows
 
-GSSkalman.1rep	<-	function(comm.mat,K,full.results=FALSE,nchains,nadapt,niter,plot.it=FALSE,cols=1,rows=1){
-
+Gom.estim	<-	function(comm.mat,K,full.results=FALSE,nchains,nadapt,niter,plot.it=FALSE,cols=1,rows=1){
 	len			<-	ncol(comm.mat)
 	nspp		<-	nrow(comm.mat)
 	MLEs		<-	matrix(NA,nrow=nspp,ncol=3,dimnames=list(rownames(comm.mat),c("a","cc","sig")))	
@@ -385,54 +351,59 @@ GSSkalman.1rep	<-	function(comm.mat,K,full.results=FALSE,nchains,nadapt,niter,pl
 	nchains		<-	nchains
 	nadapt		<-	nadapt
 	niter		<-	niter
-	for (i in 1:nspp){
-		tskreps1	<-	matrix(rep(comm.mat[i,],K),nrow=K,ncol=len,byrow=T)
-		# Setting up the jags model:
-		Gmodel <- jags.model('Gompertz-State_Space_Mod.txt', data= list('Y1'= tskreps1, 'K'= K,'len'=len), n.chains = nchains, n.adapt = nadapt)
+for (i in 1:nspp){
+	tskreps1	<-	matrix(rep(comm.mat[i,],K),nrow=K,ncol=len,byrow=T)
+	# Setting up the jags model:
+	Gmodel <- jags.model('Gompertz-State_Space_Mod.txt', data= list('Y1'= tskreps1, 'K'= K,'len'=len), n.chains = nchains, n.adapt = 				nadapt)
 
-		#Doing the MCMC
-		G.samples <- coda.samples(Gmodel, c('a', 'cc', 'sig1'),n.iter=niter)
-		G.mcmcchain <- as.matrix(G.samples)
-		MLES <- apply(G.mcmcchain,2,mean)
-		VCOV <- K*var(G.mcmcchain)
+	#Doing the MCMC
+	update(Gmodel, n.iter=niter)
 
-		#####----- After getting the MLes, sample from h(X|Y), tilting at the mles
-		#####----- The model file for the conditional posterior of X|Y is "hofXgYGompertz1rep.txt"
+	G.samples <- coda.samples(Gmodel, c('a', 'cc', 'sig1'),n.iter=niter)
+	G.mcmcchain <- as.matrix(G.samples)
+	#dim(G.mcmcchain)
 
-		Y1		<-	as.vector(comm.mat[i,])
-		hofx.data <- list(len=len,cc=MLES[2], a=MLES[1], sig=MLES[3],Y1=Y1)
+	MLES <- apply(G.mcmcchain,2,mean)
+	VCOV <- K*var(G.mcmcchain)
 
-		# Setting up the jags model:
-		hofxgy.model <- jags.model('hofXgYGompertz.txt', data= hofx.data, n.chains = nchains, n.adapt = nadapt)
+	#####----- After getting the MLes, sample from h(X|Y), tilting at the mles
+	#####----- The model file for the conditional posterior of X|Y is "hofXgYGompertz1rep.txt"
 
-		#Doing the MCMC
-		hofxgy.samples <- coda.samples(hofxgy.model, c('X1'),niter)
-		hofxgy.mcmcchain <- as.matrix(hofxgy.samples)
+	Y1		<-	as.vector(comm.mat[i,])
+	hofx.data <- list(len=len,cc=MLES[2], a=MLES[1], sig=MLES[3],Y1=Y1)
 
-		# Then, the MLEs of where the process truly was (the Kalman estimates) is given by the mean
-		# of the posterior samples of the X's given the Y's:
-		Xt.predicted <- apply(hofxgy.mcmcchain, 2, mean)
+	# Setting up the jags model:
+	hofxgy.model <- jags.model('hofXgYGompertz.txt', data= hofx.data, n.chains = nchains, n.adapt = nadapt)
 
-		MLEs[i,]		<-	MLES
-		Xt.pred[i,]		<-	Xt.predicted
-		mcmc.full[[i]]	<-	G.mcmcchain
+	#Doing the MCMC
+	update(hofxgy.model, niter)
+
+	hofxgy.samples <- coda.samples(hofxgy.model, c('X1'),niter)
+	hofxgy.mcmcchain <- as.matrix(hofxgy.samples)
+	dim(hofxgy.mcmcchain)
+
+	# Then, the MLEs of where the process truly was (the Kalman estimates) is given by the mean
+	# of the posterior samples of the X's given the Y's:
+	Xt.predicted <- apply(hofxgy.mcmcchain, 2, mean)
+
+	MLEs[i,]		<-	MLES
+	Xt.pred[i,]		<-	Xt.predicted
+	mcmc.full[[i]]	<-	G.mcmcchain
 	}
 	# Nomas para ver:
 	if(plot.it==TRUE){
-		
-		par(mfrow=c(rows,cols),mar=c(3,3,1,1),mgp=c(2,0.5,0))
-		
-		for (i in 1:nspp){
-		
-			plot(0:(len-1), comm.mat[i,], pch=16, xlab="Time", ylab="Counts",main=rownames(comm.mat)[i])
-			points(0:(len-1), exp(Xt.pred[i,]), type="l", col="red")
-		}
-	}
+	par(mfrow=c(rows,cols),mar=c(3,3,1,1),mgp=c(2,0.5,0))
+	for (i in 1:nspp){
+	plot(0:(len-1), comm.mat[i,], pch=16, xlab="Time", ylab="Counts",main=rownames(comm.mat)[i])
+	points(0:(len-1), exp(Xt.pred[i,]), type="l", col="red")
+			}
+				}
 	if(full.results==FALSE){
 		results	<-	list(MLEs,Xt.pred)
-		}else{results<- list(MLEs,Xt.pred,mcmc.full)}
+		}
+	else {results<- list(MLEs,Xt.pred,mcmc.full)}
 	return(results)
-}
+	}
 
 # 6. Probability density function for the Multivariate Normal Distribution 
 
@@ -444,5 +415,33 @@ dmvnorm	<-	function(x,mu,sigma){
 	
 }
 
+# 7. log-Likelihood function for the Multivariate Normal Distribution
+#	Guess is in the mar.nll function is the parameter vector A,B,sig and X0 in that order
+#
+#mar.nll	<-	function(guess,comm.mat){
+#
+#	nspp	<-	nrow(comm.mat)
+#	A		<-	matrix(guess[1:nspp],nrow=nspp,ncol=1)
+#	B		<-	guess[(nspp+1):(nspp+nspp^2)]
+#	B		<-	matrix((2/(1+exp(-B)))-1,nrow=nspp,ncol=nspp,byrow=T)
+#	sig		<-	exp(guess[(nspp+nspp^2 +1)])
+#	Sig		<-	diag(nspp)*sig
+#
+#	len			<-	ncol(comm.mat)
+#	loglik.vec	<-	rep(0,len)
+#
+#	mu1				<-	guess[(nspp+nspp^2+2):length(guess)]
+#	loglik.vec[1]	<-	dmvnorm(comm.mat[,1],mu1,Sig)
+#
+#	for (i in 2:len){
+#		im1	<-	i-1;
+#		Xim1  <- matrix(comm.mat[,im1], nrow=nspp,ncol=1)
+#		mui	<-	A + B %*% Xim1
+#		Xi	<-	comm.mat[,i]
+#		loglik.vec[i]	<- dmvnorm(Xi,mui,Sig)
+#		}
+#	nloglik	<-	-sum(loglik.vec)
+#	return(nloglik)
+#	}
 
 
