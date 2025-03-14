@@ -12,3 +12,10 @@ knitr::opts_chunk$set(
 ```
 
 ## Example calculations
+
+```{r }
+
+load(file = "RData/integrateddata2.RData")
+
+```
+
