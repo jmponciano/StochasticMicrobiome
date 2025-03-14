@@ -3,7 +3,12 @@
 
 ## Example calculations
 
-``` r
+In this Folder you will find a sample of the key calculations done for
+the manuscript:“Inferring stability and persistence in the vaginal
+microbiome: a stochastic model of ecological dynamics”
 
-load(file = "RData/integrateddata2.RData")
-```
+Authors: J.M. Ponciano, Larry J. Forney, Juan P. Gomez and Jacques
+Ravel.
+
+All the calculations are in the file StochasticStability.Rmd which is
+knitted to the html file StochasticStability.html.
