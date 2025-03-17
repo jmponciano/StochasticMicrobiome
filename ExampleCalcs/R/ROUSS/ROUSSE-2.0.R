@@ -299,7 +299,9 @@ ROUSS.pboot <- function(B=2,parms,Yobs, Tvec, REML="FALSE", plot.it="FALSE"){
 			bth.timeseries <- all.sims[,b];
 			remles.out <- ROUSS.REML(Yobs=bth.timeseries,Tvec=Tvec, parms.guess=parms);
 			boot.remles[b,] <- c(remles.out$remls, remles.out$lnLhat);
-			all.bootpreds <- ROUSS.predict(parms=remles.out$remls, Yobs=bth.timeseries,Tvec=Tvec,plot.it="FALSE");
+			#all.bootpreds <- ROUSS.predict(parms=remles.out$remls, Yobs=bth.timeseries,Tvec=Tvec,plot.it="FALSE");			
+			# Bootstrap prediction conditioned on observed time series: 
+			all.bootpreds <- ROUSS.predict(parms=remles.out$remls, Yobs=Yobs,Tvec=Tvec,plot.it="FALSE");
 			preds.boot1[b,] <- all.bootpreds[[1]][,2]
 			preds.boot2[b,] <- all.bootpreds[[2]][,2]
 			
@@ -310,17 +312,26 @@ ROUSS.pboot <- function(B=2,parms,Yobs, Tvec, REML="FALSE", plot.it="FALSE"){
 		rownames(CIs.mat) <- c("2.5%","REMLE","97.5%");
 		colnames(CIs.mat) <- c("mu", "theta","betasq","tausq");
 		
-		preds.CIs1 <- apply(preds.boot1,2,FUN=function(x){quantile(x,probs=c(0.025,0.975))});
-		mean.boots <- apply(preds.boot1,2,FUN=function(x){quantile(x,probs=0.50)})
-		preds.CIs1 <- t(rbind(Tvec,reml.preds-(mean.boots-preds.CIs1[1,]), reml.preds, reml.preds+(preds.CIs1[2,]-mean.boots)));
+		#preds.CIs1 <- apply(preds.boot1,2,FUN=function(x){quantile(x,probs=c(0.025,0.975))});
+		#mean.boots <- apply(preds.boot1,2,FUN=function(x){quantile(x,probs=0.50)})
+		#preds.CIs1 <- t(rbind(Tvec,reml.preds-(mean.boots-preds.CIs1[1,]), reml.preds, reml.preds+(preds.CIs1[2,]-mean.boots)));
+		
+		#preds.CIs1 <- apply(preds.boot1,2,FUN=function(x){quantile(x,probs=c(0.025,0.5,0.975))});
+		#preds.CIs1 <- t(rbind(Tvec, preds.CIs1))
+		preds.se <- apply(preds.boot1,2,FUN=function(x){sqrt(var(x))}) 
+		preds.CIs1 <- cbind(Tvec, reml.preds-1.95*preds.se, reml.preds, reml.preds+1.95*preds.se)
+		preds.CIs1[preds.CIs1[,2]<0, 2] <- 0.01 
 		colnames(preds.CIs1) <- c("Year","2.5%","REMLE","97.5%");
 
-		preds.CIs2 <- apply(preds.boot2,2,FUN=function(x){quantile(x,probs=c(0.025,0.975))});
-		mean.boots2 <- apply(preds.boot2,2,FUN=function(x){quantile(x,probs=0.50)})
-		preds.CIs2 <- t(rbind(long.t+Tvec[1],reml.longpreds-(mean.boots2-preds.CIs2[1,]), reml.longpreds, reml.longpreds+(preds.CIs2[2,]-mean.boots2)));
+		#preds.CIs2 <- apply(preds.boot2,2,FUN=function(x){quantile(x,probs=c(0.025,0.975))});
+		#mean.boots2 <- apply(preds.boot2,2,FUN=function(x){quantile(x,probs=0.50)})
+		#preds.CIs2 <- t(rbind(long.t+Tvec[1],reml.longpreds-(mean.boots2-preds.CIs2[1,]), reml.longpreds, reml.longpreds+(preds.CIs2[2,]-mean.boots2)));
 
 		#preds.CIs2 <- apply(preds.boot2,2,FUN=function(x){quantile(x,probs=c(0.025,0.5,0.975))});
 		#preds.CIs2 <- t(rbind(long.t+Tvec[1],preds.CIs2));
+		preds.se2 <- apply(preds.boot2,2,FUN=function(x){sqrt(var(x))}) 
+		preds.CIs2 <- cbind(long.t+Tvec[1], reml.longpreds-1.95*preds.se2, reml.longpreds, reml.longpreds+1.95*preds.se2)
+		preds.CIs2[preds.CIs2[,2]<0,2] <- 0.01
 		colnames(preds.CIs2) <- c("Year","2.5%","REMLE","97.5%");
 		#pred.CIs2 <- cbind(preds.CIs2[,1], reml.longpreds-(preds.CIs2[,3]-preds.CIs2[,2]),reml.longpreds,reml.longpreds+(preds.CIs2[,4]-preds.CIs2[,3]))
 		
@@ -351,7 +362,7 @@ ROUSS.pboot <- function(B=2,parms,Yobs, Tvec, REML="FALSE", plot.it="FALSE"){
 			bth.timeseries <- all.sims[,b];
 			mles.out <- ROUSS.ML(Yobs= bth.timeseries,Tvec=Tvec, parms.guess=parms);
 			boot.mles[b,] <- c(mles.out$mles, mles.out$lnL.hat,mles.out$AIC);
-			all.bootpreds <- ROUSS.predict(parms=mles.out$mles, Yobs=bth.timeseries,Tvec=Tvec,plot.it="FALSE");
+			all.bootpreds <- ROUSS.predict(parms=mles.out$mles, Yobs=Yobs,Tvec=Tvec,plot.it="FALSE");
 			preds.boot1[b,] <- all.bootpreds[[1]][,2]
 			preds.boot2[b,] <- all.bootpreds[[2]][,2]
 
@@ -367,13 +378,15 @@ ROUSS.pboot <- function(B=2,parms,Yobs, Tvec, REML="FALSE", plot.it="FALSE"){
 		preds.CIs1 <- apply(preds.boot1,2,FUN=function(x){quantile(x,probs=c(0.025,0.5,0.975))});
 		preds.CIs1 <- t(rbind(Tvec,preds.CIs1));
 		colnames(preds.CIs1) <- c("Year","2.5%","MLE","97.5%");
-		pred.CIs1 <- cbind(preds.CIs1[,1], ml.preds-(preds.CIs1[,3]-preds.CIs1[,2]),ml.preds,ml.preds+(preds.CIs1[,4]-preds.CIs1[,3]))
+		preds.CIs1 <- cbind(preds.CIs1[,1], ml.preds-(preds.CIs1[,3]-preds.CIs1[,2]),ml.preds,ml.preds+(preds.CIs1[,4]-preds.CIs1[,3]))
+		preds.CIs1[pred.CIs1[,2]<0, 2] <- 0.01 
 
 		#preds.CIs2 <- apply(preds.boot2,2,FUN=function(x){quantile(x,probs=c(0.025,0.975))});
 		#preds.CIs2 <- t(rbind(Tvec,preds.CIs2[1,], ml.preds, preds.CIs2[2,]));
 		preds.CIs2 <- apply(preds.boot2,2,FUN=function(x){quantile(x,probs=c(0.025,0.5,0.975))});
 		preds.CIs2 <- t(rbind(long.t+Tvec[1],preds.CIs2));
-		pred.CIs2 <- cbind(preds.CIs2[,1], ml.longpreds-(preds.CIs2[,3]-preds.CIs2[,2]),ml.longpreds,ml.longpreds+(preds.CIs2[,4]-preds.CIs2[,3]))
+		preds.CIs2 <- cbind(preds.CIs2[,1], ml.longpreds-(preds.CIs2[,3]-preds.CIs2[,2]),ml.longpreds,ml.longpreds+(preds.CIs2[,4]-preds.CIs2[,3]))
+		preds.CIs2[pred.CIs2[,2]<0,2] <- 0.01
 		
 		colnames(preds.CIs2) <- c("Year","2.5%","MLE","97.5%");
 		
@@ -503,7 +516,7 @@ ROUSS.predict <- function(parms, Yobs,Tvec,plot.it="TRUE"){
 }
 
 # 10. Function to run the estimation, compute the predictions and run a parametric bootstrap
-ROUSS.CALCS <- function(Yobs,Tvec,pmethod="ML",nboot, plot.pred="TRUE",plot.bootdists = "TRUE"){
+ROUSS.CALCS <- function(Yobs,Tvec,pmethod="ML",nboot, plot.pred="TRUE",plot.bootdists = "TRUE",log.out=FALSE){
 
 	# 10.1 Compute a rough guess of the parameter estimates to initialize the search:
 	guesscalc <- guess.calc(Yobs = Yobs,Tvec=Tvec)
@@ -546,9 +559,24 @@ ROUSS.CALCS <- function(Yobs,Tvec,pmethod="ML",nboot, plot.pred="TRUE",plot.boot
 	
 	
 	if(pmethod=="ML"){
-		print("AIC score");print(AIC);
-		out <- list(parms.est = parms.est, lnLhat = lnLhat, AIC = AIC, pbootmat = pboot.calcs[[1]], pboot.cis = pboot.calcs[[2]], pboot.preds1 = pboot.calcs$preds.CIs1, pboot.preds2 = pboot.calcs$preds.CIs2)}else{
-			out <- list(parms.est = parms.est, lnLhat = lnLhat, pbootmat = pboot.calcs[[1]], pboot.cis = pboot.calcs[[2]], pboot.preds1 = pboot.calcs$preds.CIs1,pboot.preds2 = pboot.calcs$preds.CIs2)}
+		#print("AIC score");print(AIC);
+		out <- list(parms.est = parms.est, lnLhat = lnLhat, AIC = AIC, pbootmat = pboot.calcs[[1]], 
+		            pboot.cis = pboot.calcs[[2]], pboot.preds1 = pboot.calcs$preds.CIs1, 
+		            pboot.preds2 = pboot.calcs$preds.CIs2)}else{
+		              
+			out <- list(parms.est = parms.est, lnLhat = lnLhat, pbootmat = pboot.calcs[[1]], 
+			            pboot.cis = pboot.calcs[[2]], pboot.preds1 = pboot.calcs$preds.CIs1, 
+			            pboot.preds2 = pboot.calcs$preds.CIs2)}
+	
+	if(log.out==TRUE){
+	  
+	  out$pbootmat <- log(out$pbootmat)
+	  out$pboot.cis <- log(out$pboot.cis)
+	  out$pboot.preds1 <- log(out$pboot.preds1)
+	  out$pboot.preds2 <- log(out$pboot.preds2)
+	  
+	}
+	
 	
 	return(out);
 	
