@@ -11,4 +11,5 @@ Authors: J.M. Ponciano, Larry J. Forney, Juan P. Gomez and Jacques
 Ravel.
 
 All the calculations are in the file StochasticStability.Rmd which is
-knitted to the html file StochasticStability.html.
+knitted to the html file
+[StochasticStability.html](https://jmponciano.github.io/StochasticMicrobiome/ExampleCalcs/StochasticStability.html).
