@@ -1,4 +1,4 @@
-my.pca <- function(Xnp){
+my.pca <- function(Xnp,scores=TRUE){
   
   Names <- row.names(Xnp)	
   dimX <- dim(Xnp);
@@ -54,6 +54,14 @@ my.pca <- function(Xnp){
   # The correlations of every variable with every principal component:  this is the stuff you want
   #corr.pcompi.varkR
   
-  return(list(corr.pcomps.vars.R = corr.pcompi.varkR, corr.pcomps.vars.S= corr.pcompi.varkS, princomp.scoresR = princomp.scoresR,princomp.scoresS=princomp.scoresS, prop.varsR=prop.varsR, prop.varsS=prop.varsS))
+  # Scaled scores
+  scaled.scores1 <- princomp.scoresR[,1]/sqrt(sum(princomp.scoresR[,1]^2))
+  scaled.scores2 <- princomp.scoresR[,2]/sqrt(sum(princomp.scoresR[,2]^2))
+  
+  
+  return(list(corr.pcomps.vars.R = corr.pcompi.varkR, corr.pcomps.vars.S= corr.pcompi.varkS, 
+              princomp.scoresR = princomp.scoresR,princomp.scoresS=princomp.scoresS, 
+              prop.varsR=prop.varsR, prop.varsS=prop.varsS,
+              scaled.scores1 = scaled.scores1, scaled.scores2 = scaled.scores2))
   
 }

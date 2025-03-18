@@ -1,6 +1,13 @@
 # Lactobacillus vs. the rest of the world
 
-source("CLS3.0.R")
+source("CLS3.0.R") #### Warning!!!! The stability() function in CLS3.0.R outputs 
+                   #### results in a slightly different format than the 
+                   #### stability() function in the ExampleCalcs folder. The  
+                   #### numbers in the output are identical but the way the 
+                   #### list of statistics is returned is slightly different.
+                   #### Hence, the results from this stability() function are
+                   #### read differently. Follow the code in the Examplecalcs
+                   #### folder to replicate the paper results.
 
 load("integrateddata2.RData")
 nshort <- length(integrated.data2)
@@ -186,7 +193,7 @@ dev.off()
 #plot(pca.scores, Znp[,4], pch=19,ylim=c(-1,0.3), xlab="PCA scores", ylab="Std. Reactivity")
 #plot(pca.scores, Stab.stats[,"Var DDP"],pch=19, xlab="PCA scores", ylab="Var Density dependence")
 
-### This plot shows each stability measure  ploted as a function of 
+### This plot shows each stability measure  plotted as a function of 
 ### the PC axis scores with which it has the highest correlation (from corr.pcompi.varkR)
 par(mfrow=c(2,2))
 plot(princomp.scoresR[,1],Znp[,1], pch=19,main="Std. Variance proportion")
