@@ -24,6 +24,11 @@ output:
 
 \clearpage
 
+```{r echo=FALSE, eval=TRUE}
+
+thisdir <- getwd()
+```
+
 # Read me (begin here)
 
 This file is the code used for our manuscript with same title above *submitted* to ***npj***. This is a practical tutorial aimed at giving a simple and intuitive introduction to fitting stochastic population dynamics models to microbial community ecology scientists. Our aim with this document is to present as simply as possible a quantitative approach to fit a continuous time stochastic population dynamics model to bacterial community time series data, with the goal of estimating stochastic stability metrics for the bacterial community, as described in the main text of our manuscript.  The code presented here was newly developed for this project.   
@@ -205,5 +210,103 @@ legend("topleft", legend=c("Observed", "Estimated without sampling error"),
 ```
 
 which results in the plot
-![Noise-filtered abundances](/Users/josemiguel/Documents/UFL/RESEARCH/LarryForney/NIH-grant-2012/Manuscript2023/NPJ-submission/Rfiles4Github/StochasticMicrobiome/ExampleCalcs/ExampleFigures/StochasticStability-Fig1.JPEG)
+<!--![Noise-filtered abundances](/Users/josemiguel/Documents/UFL/RESEARCH/LarryForney/NIH-grant-2012/Manuscript2023/NPJ-submission/Rfiles4Github/StochasticMicrobiome/ExampleCalcs/ExampleFigures/StochasticStability-Fig1.JPEG)-->
+![Noise-filtered abundances](./ExampleFigures/StochasticStability-Fig1.JPEG)
+
+As mentioned above, in the file `AllKalmanPreds.R` we do the noise-filtering 
+for all the target bacterial species time series, and for all subjects for which
+we have data.  For each subject, we saved in a as a `txt` file the noise
+filtered abundances for every target species.  These are the files named
+`longkalman-woman1.txt`, `longkalman-woman10.txt`, etc...  These are
+the data sets that we used for the MAR model stability calculations shown in the
+manuscript.
+
+
+## The MAR model stability calculations, one example
+In the main manuscript we show that the model that resulted in the most robust
+stability classification was the two species/types model, where we grouped
+the Lactobacilli as one "species" and the rest of the species as the second 
+"species". We then estimated the 2-species MAR model parameters using CLS, which
+stands for "Conditional Least Squares".  This estimation was conducted by pro-
+gramming in `R` the equations in the subsection "Conditional Least Squares", 
+page 313 (including equations 30 and 31) of [Ives et al 2003](https://doi.org/10.1890/0012-9615(2003)073[0301:ECSAEI]2.0.CO;2).  These 
+calculations were packaged into a single function which we named `mars.cls()` 
+whose only argument is the matrix of noise-filtered abundances.  The function
+is stored Here's an example with the first data set
+
+```{r mars-caclcsI, echo=TRUE}
+# Load the initial data: we are only going to borrow the ID labels from it
+load("./RData/integrateddata2.RData")
+
+# load the mars.cls function
+source("./R/mars.cls.R")
+source("./R/stability.R")
+
+fname <- paste0("./Data/longkalman-",names(integrated.data2)[1] ,".txt")
+kalman.mat <- read.table(file=fname, header=TRUE)
+dim(kalman.mat) # this is a matrix of abundances for 69 time steps x 14 species
+                # plus one column (the first one) indicating the sampling day
+
+comm.mat1 <- kalman.mat[,-1] # remove the first column with the days
+
+# Finding the columns with Lactobacillus species and adding them up
+Lactocols <- which(grepl("Lactobacillus", colnames(comm.mat1))==TRUE,arr.ind=TRUE)
+
+if(length(Lactocols)==1){Lacto.vec <- log(comm.mat1[,Lactocols])}else{
+		Lacto.vec <- log(apply(comm.mat1[,Lactocols],1,sum))}
+
+# Finding the columns of non-Lactobacilli and adding them up
+NonLactocols <- (1:ncol(comm.mat1))[-Lactocols]
+if(length(NonLactocols)==1){NonLac.vec <- log(comm.mat1[,NonLactocols])}else{
+		NonLac.vec <- log(apply(comm.mat1[,NonLactocols],1,sum))}
+
+# creating a simple matrix of daily abundances for Lactobacillus and Non-Lacto
+# bacillus
+comm.mat <- cbind(Lacto.vec,NonLac.vec)
+colnames(comm.mat) <- c("Lactobacillus", "Non-Lactobacillus")	
+comm.mat.mles <- mars.cls(comm.mat)
+
+# Printing the estimated matrix of interactions:
+print(comm.mat.mles$B)
+```
+
+Next, we use the estimated matrix of interactions and the 
+Variance-Covariance matrix of the environmental noise with the function 
+`mars.cls()` to estimate the Ives et al 2003 stochastic stability statistics, 
+which are:
+
+- `var.prop`: at stationarity the var.prop is the variance proportion 
+attributable to environmental noise. The smaller the values, the more stable 
+the dynamics.
+- `mean.return.time`  and `var.return.time`: the rate at which the transition 
+distribution converges back to the mand and variance of the stationary 
+distribution. The less time it takes to return to the stationary distribution, 
+the more stable the population.
+- `reactivity`: measures reaction to perturbations or the distance away from 
+stationary a system moves in response to a disturbance. Again, smaller is 
+better in terms of stability.
+- `sp.contribs`: the squared eigenvalue representing the characteristic return 
+rate of the variance of the transition distribution of the estimated MARS(1) 
+Markov Process.
+
+Here's how you compute them:
+
+```{r echo=TRUE, eval=TRUE}
+stab.mles.1 <- stability(comm.mat.mles$B, comm.mat.mles$sigma)
+print(stab.mles.1)
+
+```
+
+
+
+```{r mars-caclcsII, eval=FALSE, echo=FALSE}
+for(i in 1:nshort){
+	print(i)
+	fname <- paste0("ExampleCalcs/Data/longkalman-",names(integrated.data2)[i] ,".txt")
+	kalman.mat <- read.table(file=fname, header=TRUE)
+}
+```
+
+
+
 
