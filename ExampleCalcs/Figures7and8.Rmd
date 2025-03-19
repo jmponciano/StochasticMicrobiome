@@ -209,3 +209,125 @@ dev.off()
 ```
 And we get the figure, which is Figure 7 in the main manuscript:
 ![Figure 7all](./ExampleFigures/PersistenceProbsW3andW60.JPEG)
+
+
+# Figure 8: Demonstration of restoration ecology through persistence probabilities
+
+As we have amply mentioned in the manuscript, changes in intra and inter specific interactions change the population dynamics trajectory (mean trend and variance) and hence change the probabilities that the population fluctuations will remain above certain threshold.  So what we do next, as we explain in the main manuscript is that we change two things:  First, we flip the sign of the inter-specific interactions for our two-species model and for the community time series data of `woman60`. For this data set, the effect of the non-Lactobacillus on the Lactobacilli was estimated to be negative whereas the efffect of the Lactobacillus on the non-Lactobacilli was estimated to be positive.  Those effects meant that ultimately, the growth rate of the Lactobacilli was negatively affected by the growth of the other bacteria with the consequence that the persistence probabilities of the Lactobacilli tended to decay over time, as seen in the previous figure.  So we flipped the signs of these two estimates and re-didthe simulations and calculations of the persistence probabilities, which resulted in a restoration of the chances of persistence for the lactobacilli.  As an added bonus, we also tried to simply increse the growth rate instead of flipping the sign of the inter-specific effects.  Here is the code to do those calculations and the resulting graph, which is Figure 8 in the main manuscript:
+
+```{r Fig8left, echo=TRUE, eval=FALSE}
+
+New.PFallvec <- rep(0,nthreshs)
+# Set i= 46 to work with woman 60
+ith.ind <- 46#10#25#
+ith.commat <- Two.spp.commats[[ith.ind]]
+ith.len <- nrow(ith.commat)
+ith.A <- mles.list[[ith.ind]]$A
+print(ith.A)
+ith.B <- mles.list[[ith.ind]]$B
+print(ith.B)
+# Now increase the strength of DDP for Lactobacillus
+#ith.B[1,1] <- 0.95
+ith.B[1,2] <- -ith.B[1,2]
+ith.B[2,1] <- -ith.B[2,1] 
+ith.S <- mles.list[[ith.ind]]$sigma
+ith.muvec <- ginv(diag(2)-ith.B)%*%ith.A
+ith.half <- 0.5*sum(ith.muvec)
+ith.xo <- rep(ith.half,2)
+for(k in 1:nthreshs){
+	code.line1 <- paste0("cross.thres",k," <-rep(0,nchains)")
+	eval(parse(text=code.line1))
+}
+for(j in 1:nchains){
+	sim.mat <- Twospp.mar(A=ith.A, B=ith.B, Sigma=ith.S,len=len.sim,Xo=ith.xo,rnd.init=FALSE)
+	#print(sim.mat)
+	for(h in 1:nthreshs){
+		test <- sum((sim.mat[thres.times[h],1]/sum(sim.mat[thres.times[h],]))<thres)>0
+		code.line2 <- paste0("cross.thres",h,"[j] <- test")
+		eval(parse(text=code.line2))
+	}
+}
+for(ell in 1:nthreshs){
+	code.line3 <- paste0("New.PFallvec[",ell,"] <- sum(cross.thres",ell,")/nchains")
+	eval(parse(text=code.line3))
+}  
+
+New.PPersist <- c(1,1-New.PFallvec)
+
+rbind(New.PPersist,c(1,1-PFall.mat[46,]))
+
+
+stab.level <- belongingsF[46]
+plotfname <- paste0("Figure8-March2025.tiff")	
+
+tiff(plotfname,  width=8.5,height=6, units="in", res=600, compression="lzw",type="cairo", family="times")
+par(mfrow=c(1,2), mar=c(4,4,4,1),  oma=c(2,2,2,1), mgp=c(2,0.5,0))
+
+plot(x=Tthres.mat[,1],y=c(1,1-PFall.mat[46,]), type="b", pch=1, col="black", lwd=2, ylab="", 
+main="",bty="n", xlab="")
+points(Tthres.mat[,1], New.PPersist, type="b", pch=16, col="lightpink", lwd=2)
+legend(x=10,y=0.8, legend=c("Estimated dynamics","Restored dynamics"), pch=c(16,16), col=c("black","lightpink"), cex=1.05, bty="n")
+mtext("a)", side=3, at=-2,line=1,adj=0, cex=1.15)
+#text(x=1.5,y=1.1,labels="(a)", cex=1.15)
+#dev.off()
+
+#####  Now increasing the growth rate of lactobacillus
+
+New.PFallvec <- rep(0,nthreshs)
+# Set i= 46 to work with woman 60
+ith.ind <- 46#10#25#
+ith.commat <- Two.spp.commats[[ith.ind]]
+ith.len <- nrow(ith.commat)
+ith.A <- mles.list[[ith.ind]]$A
+print(ith.A)
+ith.B <- mles.list[[ith.ind]]$B
+print(ith.B)
+ith.A[1] <- ith.A[1]*1.25
+
+ith.S <- mles.list[[ith.ind]]$sigma
+ith.muvec <- ginv(diag(2)-ith.B)%*%ith.A
+ith.half <- 0.5*sum(ith.muvec)
+ith.xo <- rep(ith.half,2)
+for(k in 1:nthreshs){
+	code.line1 <- paste0("cross.thres",k," <-rep(0,nchains)")
+	eval(parse(text=code.line1))
+}
+for(j in 1:nchains){
+	sim.mat <- Twospp.mar(A=ith.A, B=ith.B, Sigma=ith.S,len=len.sim,Xo=ith.xo,rnd.init=FALSE)
+	#print(sim.mat)
+	for(h in 1:nthreshs){
+		test <- sum((sim.mat[thres.times[h],1]/sum(sim.mat[thres.times[h],]))<thres)>0
+		code.line2 <- paste0("cross.thres",h,"[j] <- test")
+		eval(parse(text=code.line2))
+	}
+}
+for(ell in 1:nthreshs){
+	code.line3 <- paste0("New.PFallvec[",ell,"] <- sum(cross.thres",ell,")/nchains")
+	eval(parse(text=code.line3))
+}  
+
+New.PPersist <- c(1,1-New.PFallvec)
+
+rbind(New.PPersist,c(1,1-PFall.mat[46,]))
+
+
+stab.level <- belongingsF[46]
+plot(x=Tthres.mat[,1],y=c(1,1-PFall.mat[46,]), type="b", pch=1, col="black", lwd=2, ylab="", 
+main="",bty="n", xlab="")
+points(Tthres.mat[,1], New.PPersist, type="b", pch=16, col="lightpink", lwd=2)
+legend(x=10,y=0.8, legend=c("Estimated dynamics","Restored dynamics"), pch=c(16,16), col=c("black","lightpink"), cex=1.05, bty="n")
+mtext("b)", side=3, at=-2,line=1,adj=0, cex=1.15)
+#text(x=1.5,y=1.1,labels="(b)",cex=1.15)
+
+mtext(text=paste0(short.labs[46],": Pr(persisting above ",thres*100,"% of total on day 't')"), side=3, outer=TRUE, adj=0.5, cex=1.5)
+
+mtext(text="P(Lactobacillus is above threshold)", side=2,outer=TRUE, adj=0.5, cex=1.15)
+
+mtext(text="Days (t) since final observation", side=1,outer=TRUE, adj=0.5, cex=1.15)
+dev.off()
+
+
+```
+
+
+![PersistenceProbsW60restoration](./ExampleFigures/PersistenceProbsW60-restoration.JPEG)
