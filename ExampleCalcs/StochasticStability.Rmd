@@ -368,17 +368,11 @@ The thing to remember of this table is that the highest the mean score in PC I a
 
 A VERY IMPORTANT NOTE OF CAUTION:  the order of these labels has to logically match the
 order of the rows in which the cluster means are printed AND the four
-stability classifications as suggested above.  For instance, if it is
-the last row in the cluster means that has the largest scaled PC I score 
-and the smallest ddp value, so the `highly stable` label goes last.  If the cluster mean with the ddp value closest to 1 and smallest scaled PC I score appears in the second row of the kmeans() output, so the 
-`Highly unstable` label appears second, and so forth...
-Annoyingly, every time you run the `kmeans` function in R it returns the same
-mean values for each cluster but in different order... Arghhhh!!!!!
-(That's why whenver possible I like to code my own functions, like my PCA
-function above). Anyways, as a remedy, I re-assign the original cluster 
+stability classifications as suggested above. Now, annoyingly, every time you run the `kmeans` function in R it returns the same
+mean values for each cluster but in different order... Arghhhh!!!!! (That's why whenver possible I like to code my own functions, like my PCA function above).  This output nonsense difficults the automatization of the stability classification but the code below fixes that problem. Anyways, as a remedy, I re-assign the original cluster 
 assignments with cluster group numbers in ordinal order and go from highly stable
 to highly unstable. That way, no matter the outcome of the cluster function, the
-order is maintained:
+order is maintained and goes from `highly stable` to `highly unstable`.  Here's the code to fix that problem:  
 
 
 ```{r belongingscalcsII}
