@@ -21,3 +21,7 @@ All the stochastic stability calculations for our women vaginal
 community data sets are are in the file StochasticStability.Rmd which is
 knitted to the html file
 [StochasticStability.html](https://jmponciano.github.io/StochasticMicrobiome/ExampleCalcs/StochasticStability.html).
+
+Figures 7 and 8 of the main manuscript are reproduced here: [Html for
+figures 7 and
+8](https://jmponciano.github.io/StochasticMicrobiome/ExampleCalcs/Figures7and8.html).
