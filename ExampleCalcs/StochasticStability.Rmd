@@ -366,6 +366,21 @@ print(cluster.means)
 
 The thing to remember of this table is that the highest the mean score in PC I and the lowest the value of the strength of density dependence (ddp) (hence the stronger the self-population regulation), the more stable the overall dynamics. This trend suggests using the classification: - `very stable`: the cluster group with the lowest ddp value of 0.52 and highest PC score 1 of 0.22. - `stable`: the cluster group with the second lowest ddp value of 0.69 and scaled PC score I of 0.05 - `unstable`: the cluster group with a somewhat high ddp value of 0.78 (values closer to 1 indicate closeness to density-independent growth) and second to smallest value of the scaled PC score I of -0.01 - `highly unstable`: the cluster group with the ddp value closer to 1 (0.9), thus indicating unregulated growth, and with the smallest value of the scaled PC score, thus indicating unstable dynamics per the Ives et al (2003) stochastic stability metrics.
 
+A VERY IMPORTANT NOTE OF CAUTION:  the order of these labels has to logically match the
+order of the rows in which the cluster means are printed AND the four
+stability classifications as suggested above.  For instance, if it is
+the last row in the cluster means that has the largest scaled PC I score 
+and the smallest ddp value, so the `highly stable` label goes last.  If the cluster mean with the ddp value closest to 1 and smallest scaled PC I score appears in the second row of the kmeans() output, so the 
+`Highly unstable` label appears second, and so forth...
+Annoyingly, every time you run the `kmeans` function in R it returns the same
+mean values for each cluster but in different order... Arghhhh!!!!!
+(That's why whenver possible I like to code my own functions, like my PCA
+function above). Anyways, as a remedy, I re-assign the original cluster 
+assignments with cluster group numbers in ordinal order and go from highly stable
+to highly unstable. That way, no matter the outcome of the cluster function, the
+order is maintained:
+
+
 ```{r belongingscalcsII}
 
 belongings0 <- kmeans.clust$cluster
@@ -386,16 +401,7 @@ for(i in 1:nshort){
 belongingsF <- as.factor(belongings)
 
 
-# VERY IMPORTANT:  the order of these labels has to logically match the
-# order of the rows in which the cluster means are printed AND the four
-# stability classifications as suggested above.  Here, for instance, it is
-# the last row that has the largest scaled PC I score and the smallest ddp
-# value, so the `highly stable` label goes last.  The cluster mean with the
-# ddp value closest to 1 and smallest scaled PC I score appears in the second
-# row of the kmeans() output, so the `Highly unstable` label appears second,
-# and so forth...
 levels(belongingsF) <- c("Highly stable","Stable","Unstable","Highly unstable")
-
 
 belongings.df <- data.frame(short.labs=rownames(stab.clust.data),belongings, belongingsF,scores.cluster)
 # Print these and examine them 
@@ -458,12 +464,6 @@ legend(x=0.08,y=0.11, legend=c("Highly stable","Stable","Unstable","Highly unsta
 
 This code results in the following plot:
 ![Stability PCA](./ExampleFigures/PCA-88women-2spp-March2025.JPEG)
-
-A note of caution for the user is necessary:  whenever the kmeans cluster 
-algorithm in `R` is run, the order of the clusters is annoyingly printed in a
-different order, even for the same data set. So each person running the code 
-has to make  sure the color labeling of the points and the belonging labels to 
-each cluster all make sense according to the stability classification.  
 
 This plot concludes the stochastic stability calculations. All code written by
 J.M. Ponciano.  Direct questions to `josemi@ufl.edu`.
