@@ -251,6 +251,8 @@ thisdir <- getwd()
 ############## Figure 7 from the main text:  look under the folder "/Wi-2sppPlots/Stable/PFall0.45-W-3.tiff" and
 ############## /Wi-2sppPlots/Stable/PFall0.45-W-60.tiff"                                                        
 
+############## To plot results for woman 3 just run the code inside the for loop setting i <- 3
+
 for(i in 1:nshort){
   stab.level <- belongingsF[i]
   plotfname <- paste0(thisdir,"/Wi-2sppPlots/",stab.level,"/PFall",thres,"-", short.labs[i],".tiff")	
